@@ -18,13 +18,36 @@ SYSTEM_PROMPT = """你是短视频漫剧分镜师，将剧本拆解为 20-30 个
 7. 动作场景拆分为多个连续镜头（如"摔杯子"拆为"抓起杯子→砸向地面→碎片飞溅"）
 8. 相邻镜头画面要有连贯性，跳跃时添加过渡镜头
 9. 总镜头数控制在 20-30 个，对应 1-2 分钟时长
+10. 剧本中的台词必须分配到对应的镜头中，台词字段不能为空
 
 输出 JSON 格式：
 {"storyboards":[{"shot_no":1,"scene_desc":"画面描述","shot_type":"特写","camera_angle":"平视","dialogue":"台词内容","emotion":"紧张","duration":1.8}]}"""
 
 
 def build_generate_prompt(content: str) -> str:
-    return f"请将以下剧本拆解为分镜表：\n\n{content}"
+    # 提取剧本中的台词
+    dialogues = []
+
+    # 格式1: 角色名："台词" 或 角色名：台词
+    for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', content):
+        dialogue = match.group(1).strip().strip('"“”')
+        if dialogue and len(dialogue) > 2:
+            dialogues.append(dialogue)
+
+    # 格式2: 独立台词 "台词"
+    for match in re.finditer(r'[""]([^"""]{3,})[""]', content):
+        dialogue = match.group(1).strip()
+        if dialogue not in dialogues:
+            dialogues.append(dialogue)
+
+    # 限制台词数量，避免 prompt 过长
+    dialogues = dialogues[:10]
+
+    prompt = f"请将以下剧本拆解为 20-30 个镜头的分镜表。\n\n剧本内容：\n{content}\n\n需要提取的台词（必须分配到对应镜头）：\n"
+    for i, d in enumerate(dialogues, 1):
+        prompt += f"{i}. {d}\n"
+
+    return prompt
 
 
 def detect_action_sequences(text: str) -> list[dict]:
