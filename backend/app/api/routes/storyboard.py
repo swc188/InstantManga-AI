@@ -101,6 +101,10 @@ def generate_storyboard(
             json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
             # 修复未引号的键
             json_str = _re.sub(r'(\w+)\s*:', r'"\1":', json_str)
+            # 修复缺少逗号的字段（如 `"value" "key"` 应为 `"value", "key"`）
+            json_str = _re.sub(r'"([^"]+)"\s+"', r'"\1", "', json_str)
+            # 修复缺少引号的字符串值
+            json_str = _re.sub(r':\s*([^"{}\[\],\s][^,}\]]*)', r': "\1"', json_str)
             data = _json.loads(json_str)
         except _json.JSONDecodeError:
             pass
