@@ -15,5 +15,6 @@ class ModelConfig(Base):
     base_url: Mapped[str] = mapped_column(String, nullable=False)
     api_key_enc: Mapped[str] = mapped_column(String, nullable=False)
     model_name: Mapped[str] = mapped_column(String, nullable=False)
+    url_mode: Mapped[str] = mapped_column(String, default="base")
     is_valid: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)

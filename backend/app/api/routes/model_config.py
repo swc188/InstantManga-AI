@@ -11,6 +11,7 @@ from ...providers.registry import (
     build_image_provider,
     build_text_provider,
     build_tts_provider,
+    build_video_provider,
 )
 from ...schemas.model_config import (
     CAPABILITIES,
@@ -30,13 +31,16 @@ def _build(
     base_url: str,
     api_key: str,
     model_name: str,
+    url_mode: str = "base",
 ):
     if capability == "text":
-        return build_text_provider(base_url, api_key, model_name)
+        return build_text_provider(base_url, api_key, model_name, url_mode=url_mode)
     if capability == "image":
-        return build_image_provider(provider_type, base_url, api_key, model_name)
+        return build_image_provider(provider_type, base_url, api_key, model_name, url_mode=url_mode)
     if capability == "tts":
-        return build_tts_provider(base_url, api_key, model_name)
+        return build_tts_provider(base_url, api_key, model_name, url_mode=url_mode)
+    if capability == "video":
+        return build_video_provider(provider_type, base_url, api_key, model_name, url_mode=url_mode)
     raise ApiError(status_code=404, code=404, message=f"未知的能力类型：{capability}")
 
 
@@ -47,6 +51,7 @@ def _to_out(cfg: ModelConfig) -> ModelConfigOut:
         base_url=cfg.base_url,
         api_key_masked=mask_key(decrypt_secret(cfg.api_key_enc)),
         model_name=cfg.model_name,
+        url_mode=cfg.url_mode or "base",
         is_valid=bool(cfg.is_valid),
         updated_at=cfg.updated_at,
     )
@@ -79,6 +84,7 @@ def upsert_model_config(
     cfg.provider_type = payload.provider_type
     cfg.base_url = payload.base_url
     cfg.model_name = payload.model_name
+    cfg.url_mode = payload.url_mode
     cfg.is_valid = 0
     db.commit()
     db.refresh(cfg)
@@ -96,6 +102,7 @@ def test_model_config(payload: ModelConfigTest) -> ApiResponse:
         base_url=payload.base_url,
         api_key=payload.api_key,
         model_name=payload.model_name,
+        url_mode=payload.url_mode,
     )
     try:
         ok = builder.test_connection()
@@ -118,6 +125,7 @@ def test_saved_model_config(
         base_url=cfg.base_url,
         api_key=decrypt_secret(cfg.api_key_enc),
         model_name=cfg.model_name,
+        url_mode=cfg.url_mode or "base",
     )
     try:
         ok = provider.test_connection()

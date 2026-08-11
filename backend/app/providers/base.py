@@ -14,6 +14,12 @@ class GeneratedImage:
     notes: list[str] = field(default_factory=list)
 
 
+@dataclass
+class GeneratedVideo:
+    path: Path
+    notes: list[str] = field(default_factory=list)
+
+
 @runtime_checkable
 class TextProvider(Protocol):
     supports: str = "text"
@@ -55,6 +61,23 @@ class TTSProvider(Protocol):
         voice: str | None = None,
     ) -> Path:
         """合成带情绪的语音文件。"""
+
+    def test_connection(self) -> bool:
+        """探测服务连通性与鉴权是否有效。"""
+
+
+@runtime_checkable
+class VideoProvider(Protocol):
+    supports: str = "video"
+
+    def generate(
+        self,
+        prompt: str,
+        ref_image: Path | None = None,
+        output_dir: Path | None = None,
+        **kw,
+    ) -> GeneratedVideo:
+        """生成视频（异步任务）。"""
 
     def test_connection(self) -> bool:
         """探测服务连通性与鉴权是否有效。"""

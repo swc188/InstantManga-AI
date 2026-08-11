@@ -9,6 +9,7 @@ class ModelConfigOut(BaseModel):
     base_url: str
     api_key_masked: str
     model_name: str
+    url_mode: str
     is_valid: bool
     updated_at: datetime
 
@@ -18,6 +19,8 @@ class ModelConfigUpsert(BaseModel):
     base_url: str
     api_key: str | None = None
     model_name: str
+    endpoint_url: str | None = None
+    url_mode: str = "base"
 
 
 class ModelConfigTest(BaseModel):
@@ -26,9 +29,10 @@ class ModelConfigTest(BaseModel):
     base_url: str
     api_key: str
     model_name: str
+    url_mode: str = "base"
 
 
-CAPABILITIES = ("text", "image", "tts")
+CAPABILITIES = ("text", "image", "tts", "video")
 
 
 def mask_key(key: str) -> str:

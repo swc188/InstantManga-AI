@@ -10,6 +10,11 @@ const title = ref('')
 const genre = ref('')
 const creating = ref(false)
 
+// 删除确认状态
+const deletingId = ref<number | null>(null)
+const deleteConfirmText = ref('')
+const deleteError = ref('')
+
 onMounted(() => {
   store.fetchProjects()
 })
@@ -22,10 +27,48 @@ async function handleCreate() {
       title: title.value.trim(),
       genre: genre.value || undefined,
     })
-    router.push(`/projects/${project.id}/script`)
+    // 自动填写题材到 script 页面的输入框，通过路由 query 参数传递
+    router.push({
+      path: `/projects/${project.id}/script`,
+      query: { genre: genre.value || '', fromCreate: 'true' },
+    })
   } finally {
     creating.value = false
   }
+}
+
+async function handleDelete(projectId: number, _projectTitle: string, e: Event) {
+  e.stopPropagation()
+  deletingId.value = projectId
+  deleteConfirmText.value = ''
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (deletingId.value === null) return
+  const project = store.projects.find(p => p.id === deletingId.value)
+  if (!project) return
+
+  // 验证用户输入的标题是否匹配
+  if (deleteConfirmText.value.trim() !== project.title) {
+    deleteError.value = '请输入正确的项目标题以确认删除'
+    return
+  }
+
+  try {
+    await store.deleteProject(deletingId.value)
+    deletingId.value = null
+    deleteConfirmText.value = ''
+    deleteError.value = ''
+  } catch (e) {
+    deleteError.value = (e as Error).message
+  }
+}
+
+function cancelDelete() {
+  deletingId.value = null
+  deleteConfirmText.value = ''
+  deleteError.value = ''
 }
 </script>
 
@@ -49,11 +92,41 @@ async function handleCreate() {
         v-for="p in store.projects"
         :key="p.id"
         class="project-card"
-        @click="router.push(`/projects/${p.id}/script`)"
+        @click="router.push({ path: `/projects/${p.id}/script`, query: { genre: p.genre || '' } })"
       >
-        <h3>{{ p.title }}</h3>
+        <div class="card-header">
+          <h3>{{ p.title }}</h3>
+          <button
+            class="delete-btn"
+            @click.stop="handleDelete(p.id, p.title, $event)"
+            title="删除项目"
+          >
+            删除
+          </button>
+        </div>
         <p v-if="p.genre">题材：{{ p.genre }}</p>
         <p class="meta">状态：{{ p.status }}</p>
+      </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div v-if="deletingId !== null" class="delete-modal-overlay" @click="cancelDelete">
+      <div class="delete-modal" @click.stop>
+        <h3>确认删除项目</h3>
+        <p class="delete-warning">此操作不可撤销，项目的所有数据将被永久删除。</p>
+        <p class="delete-hint">请输入项目标题 "<strong>{{ store.projects.find(p => p.id === deletingId)?.title }}</strong>" 以确认删除</p>
+        <input
+          v-model="deleteConfirmText"
+          type="text"
+          placeholder="输入项目标题确认删除"
+          class="delete-confirm-input"
+          @keyup.enter="confirmDelete"
+        />
+        <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
+        <div class="delete-actions">
+          <button class="ghost" @click="cancelDelete">取消</button>
+          <button class="danger" :disabled="deleteConfirmText.trim() !== store.projects.find(p => p.id === deletingId)?.title" @click="confirmDelete">确认删除</button>
+        </div>
       </div>
     </div>
 
@@ -149,5 +222,127 @@ async function handleCreate() {
   font-size: 14px;
   text-align: center;
   padding: 32px 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.delete-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.delete-btn:hover {
+  background: #fecaca;
+}
+
+/* 删除确认弹窗 */
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.delete-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.delete-modal h3 {
+  font-size: 18px;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.delete-warning {
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.delete-hint {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.delete-confirm-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.delete-confirm-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.delete-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.delete-actions button {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+}
+
+.delete-actions .ghost {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.delete-actions .ghost:hover {
+  background: #e2e8f0;
+}
+
+.delete-actions .danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.delete-actions .danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.delete-actions .danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

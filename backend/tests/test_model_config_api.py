@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
-from app.database import SessionLocal
+from app.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import ModelConfig
 from app.providers.openai_compatible import OpenAICompatibleBase
@@ -13,11 +13,13 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def clean_model_configs():
+def setup_db():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
     with SessionLocal() as db:
         db.execute(delete(ModelConfig))
         db.commit()
-    yield
 
 
 def test_upsert_and_list_config(monkeypatch):
@@ -56,7 +58,7 @@ def test_upsert_requires_key_when_new_config():
 
 def test_upsert_unknown_capability():
     resp = client.put(
-        "/api/model-config/video",
+        "/api/model-config/unknown_cap",
         json={"base_url": "u", "api_key": "k", "model_name": "m"},
     )
     assert resp.status_code == 404
