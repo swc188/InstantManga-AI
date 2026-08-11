@@ -93,21 +93,70 @@ def generate_storyboard(
         match = _re.search(r'\{.*\}', raw, _re.DOTALL)
         if not match:
             raise ApiError(status_code=502, code=502, message="AI 返回内容无法解析，请重试")
+        json_str = match.group(0)
+        
+        # 方法3: 修复常见的 JSON 错误
         try:
-            data = _json.loads(match.group(0))
-        except _json.JSONDecodeError:
-            # 方法3: 修复常见的 JSON 错误
-            json_str = match.group(0)
             # 移除尾随逗号
             json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
             # 修复未引号的键
             json_str = _re.sub(r'(\w+)\s*:', r'"\1":', json_str)
+            data = _json.loads(json_str)
+        except _json.JSONDecodeError:
+            pass
+        
+        # 方法4: 逐字符修复
+        if 'data' not in locals():
             try:
+                fixed = []
+                in_string = False
+                escape = False
+                for i, c in enumerate(json_str):
+                    if escape:
+                        fixed.append(c)
+                        escape = False
+                        continue
+                    if c == '\\':
+                        escape = True
+                        fixed.append(c)
+                        continue
+                    if c == '"':
+                        in_string = not in_string
+                        fixed.append(c)
+                        continue
+                    if in_string:
+                        fixed.append(c)
+                        continue
+                    # 不在字符串内
+                    if c in '{[':
+                        fixed.append(c)
+                    elif c == '}':
+                        # 检查是否需要逗号
+                        if fixed and fixed[-1] not in '[,{':
+                            fixed.append(',')
+                        fixed.append(c)
+                    elif c == ']':
+                        if fixed and fixed[-1] not in '[,{':
+                            fixed.append(',')
+                        fixed.append(c)
+                    elif c == ',':
+                        fixed.append(c)
+                    elif c == ':':
+                        fixed.append(c)
+                    elif c.isspace():
+                        continue
+                    else:
+                        # 未引用的值
+                        fixed.append(f'"{c}"')
+                
+                json_str = ''.join(fixed)
+                # 再次尝试修复尾随逗号
+                json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
                 data = _json.loads(json_str)
             except _json.JSONDecodeError as e:
                 import logging
                 logging.getLogger(__name__).error(f"Failed to parse storyboard JSON: {e}")
-                logging.getLogger(__name__).error(f"JSON string: {json_str[:500]}...")
+                logging.getLogger(__name__).error(f"JSON string: {json_str[:1000]}...")
                 raise ApiError(status_code=502, code=502, message=f"分镜解析失败: {e}")
     
     raw_shots = data.get("storyboards", [])
