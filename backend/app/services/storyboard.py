@@ -28,19 +28,15 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 角色名："台词" 或 角色名：台词
-    for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', content):
-        dialogue = match.group(1).strip().strip('"“”')
-        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
-            dialogues.append(dialogue)
-
-    # 格式2: 独立台词 "台词" - 只提取短句（<50字符），过滤叙述性文本
-    for match in re.finditer(r"['\"]([^'\"]{3,50})['\"]", content):
+    # 格式1: 引号内的台词 "台词" 或 '台词'
+    for match in re.finditer(r'["\']([^"\']{3,80})["\']', content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and dialogue not in dialogues:
-            dialogues.append(dialogue)
+        # 过滤掉叙述性文本
+        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
+            if dialogue not in dialogues:
+                dialogues.append(dialogue)
 
-    # 格式3: 【】标注的关键台词
+    # 格式2: 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
@@ -124,20 +120,15 @@ def validate_dialogue_coverage(
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 角色名："台词" 或 角色名：台词 - 提取引号内的台词
-    for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', script_content):
-        dialogue = match.group(1).strip().strip('"“”')
-        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
-            dialogues.append(dialogue)
-
-    # 格式2: 独立台词 "台词" 或 '台词' - 只提取短句（<50字符）
-    for match in re.finditer(r"['\"]([^'\"]{3,50})['\"]", script_content):
+    # 格式1: 引号内的台词 "台词" 或 '台词'
+    for match in re.finditer(r'["\']([^"\']{3,80})["\']', script_content):
         dialogue = match.group(1).strip()
-        # 过滤掉叙述性文本（包含句号、冒号等）
-        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and dialogue not in dialogues:
-            dialogues.append(dialogue)
+        # 过滤掉叙述性文本（包含句号、冒号的不是台词）
+        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
+            if dialogue not in dialogues:
+                dialogues.append(dialogue)
 
-    # 格式3: 【】标注的关键台词
+    # 格式2: 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
@@ -153,7 +144,7 @@ def validate_dialogue_coverage(
         # 去掉角色名前缀（如"顾川："、"林夏（内心OS）："）
         dialogue = re.sub(r'^[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?[：:]\s*', '', dialogue)
         dialogue = re.sub(r'^[\u4e00-\u9fa5]+[（(].*?[）)]\s*[：:]\s*', '', dialogue)
-        dialogue = dialogue.strip().strip('"“”')
+        dialogue = dialogue.strip().strip('"“”\'\'')
         if dialogue:
             covered.add(dialogue)
 
