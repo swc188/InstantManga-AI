@@ -40,6 +40,15 @@ const portraitStyles = [
   { value: 'manga', label: '卡通' },
   { value: 'realistic', label: '写实' },
   { value: 'chibi', label: 'Q版' },
+  { value: 'anime', label: '日系动漫' },
+  { value: 'comic', label: '美式漫画' },
+  { value: 'watercolor', label: '水彩' },
+  { value: 'sketch', label: '素描' },
+  { value: 'pixel', label: '像素风' },
+  { value: '3d', label: '3D渲染' },
+  { value: 'lineart', label: '线稿' },
+  { value: 'pop', label: '波普艺术' },
+  { value: 'ink', label: '水墨风' },
 ]
 
 // 新增场景表单
@@ -177,6 +186,15 @@ function getStyleLabel(style: string | null): string {
     manga: '卡通',
     realistic: '写实',
     chibi: 'Q版',
+    anime: '日系动漫',
+    comic: '美式漫画',
+    watercolor: '水彩',
+    sketch: '素描',
+    pixel: '像素风',
+    '3d': '3D渲染',
+    lineart: '线稿',
+    pop: '波普艺术',
+    ink: '水墨风',
   }
   return map[style || 'manga'] || '卡通'
 }

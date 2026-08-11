@@ -38,12 +38,21 @@ def generate_character_portrait(
             base_url=cfg.base_url,
         )
 
-        if style == "realistic":
-            style_desc = "photorealistic, high detail photography, realistic lighting"
-        elif style == "chibi":
-            style_desc = "chibi style, cute cartoon, big head small body, anime style"
-        else:
-            style_desc = "manga style, anime style"
+        style_desc_map = {
+            "realistic": "photorealistic, high detail photography, realistic lighting",
+            "chibi": "chibi style, cute cartoon, big head small body, anime style",
+            "anime": "japanese anime style, detailed illustration, vibrant colors",
+            "comic": "american comic book style, bold lines, dynamic shading",
+            "watercolor": "watercolor painting style, soft edges, flowing colors",
+            "sketch": "pencil sketch style, graphite drawing, hand-drawn lines",
+            "pixel": "pixel art style, 8-bit retro, blocky aesthetic",
+            "3d": "3D rendered style, cinematic lighting, high quality render",
+            "lineart": "clean line art, minimalist, single color outline",
+            "pop": "pop art style, bold colors, halftone dots, commercial art",
+            "ink": "chinese ink wash painting, traditional brush strokes, artistic",
+            "manga": "manga style, anime style, detailed illustration",
+        }
+        style_desc = style_desc_map.get(style, "manga style, anime style")
         
         prompt = f"Character portrait of {character_name}. {keywords}. {style_desc}, full body shot, neutral background."
 
