@@ -195,70 +195,20 @@ def check_transition_smoothness(
 ) -> list[dict]:
     """检查相邻镜头的画面连贯性，提示需要过渡镜头的位置。"""
     issues = []
-    
-    # 景别跳跃检查
-    shot_type_order = {"远景": 0, "全景": 1, "中景": 2, "近景": 3, "特写": 4}
-    
     for i in range(len(storyboards) - 1):
         current = storyboards[i]
         next_sb = storyboards[i + 1]
         
-        current_type = current.get("shot_type", "")
-        next_type = next_sb.get("shot_type", "")
-        
-        # 检查景别跳跃（只检测特写↔远景的直接跳跃）
-        if current_type and next_type:
-            current_level = shot_type_order.get(current_type, 2)
-            next_level = shot_type_order.get(next_type, 2)
-            jump = abs(current_level - next_level)
-            
-            # 只有跨越3个及以上级别才警告
-            if jump >= 3:
-                issues.append({
-                    "from_shot": i + 1,
-                    "to_shot": i + 2,
-                    "reason": f"景别跳跃过大（{current_type}→{next_type}），建议添加过渡镜头",
-                    "type": "shot_type_jump"
-                })
-        
-        # 检查场景切换（只检测有明显场景变化的）
         current_desc = current.get("scene_desc", "")
         next_desc = next_sb.get("scene_desc", "")
         
-        # 如果场景描述差异很大（关键词不重叠）
-        if current_desc and next_desc:
-            current_keywords = set(re.findall(r'[\u4e00-\u9fa5]{2,}', current_desc))
-            next_keywords = set(re.findall(r'[\u4e00-\u9fa5]{2,}', next_desc))
-            overlap = current_keywords & next_keywords
-            
-            # 如果关键词完全不重叠且有台词变化
-            if len(overlap) == 0 and current.get("dialogue") and next_sb.get("dialogue"):
+        # 如果两个镜头的景别差异过大且没有过渡
+        if current.get("shot_type") != next_sb.get("shot_type"):
+            if abs(storyboards.index(current) - storyboards.index(next_sb)) > threshold:
                 issues.append({
                     "from_shot": i + 1,
                     "to_shot": i + 2,
-                    "reason": "场景切换突兀，建议添加过渡镜头",
-                    "type": "scene_jump"
+                    "reason": "景别变化较大，建议添加过渡镜头",
                 })
-        
-        # 检查情绪断层（只检测极端对立）
-        current_emotion = current.get("emotion", "")
-        next_emotion = next_sb.get("emotion", "")
-        
-        if current_emotion and next_emotion:
-            # 对立情绪检查
-            opposite_pairs = [
-                ("平静", "愤怒"), ("平静", "恐惧"), ("喜悦", "悲伤"),
-                ("紧张", "放松")
-            ]
-            for p1, p2 in opposite_pairs:
-                if (current_emotion == p1 and next_emotion == p2) or \
-                   (current_emotion == p2 and next_emotion == p1):
-                    issues.append({
-                        "from_shot": i + 1,
-                        "to_shot": i + 2,
-                        "reason": f"情绪突变（{current_emotion}→{next_emotion}），建议添加过渡镜头",
-                        "type": "emotion_jump"
-                    })
-                    break
     
     return issues

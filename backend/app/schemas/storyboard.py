@@ -40,7 +40,6 @@ class TransitionIssue(BaseModel):
     from_shot: int
     to_shot: int
     reason: str
-    type: str = "shot_type_jump"
 
 
 class StoryboardValidation(BaseModel):
