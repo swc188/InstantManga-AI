@@ -1,7 +1,11 @@
 <script setup lang="ts">
-defineProps<{
-  current: string
-}>()
+import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+
+const route = useRoute()
+const router = useRouter()
+
+const projectId = route.params.id
 
 const steps = [
   { key: 'script', label: '剧本' },
@@ -11,6 +15,12 @@ const steps = [
   { key: 'audio', label: '音频' },
   { key: 'studio', label: '剪辑' },
 ]
+
+const currentStep = computed(() => route.name as string)
+
+function navigateTo(key: string) {
+  router.push(`/projects/${projectId}/${key}`)
+}
 </script>
 
 <template>
@@ -19,7 +29,8 @@ const steps = [
       v-for="(step, idx) in steps"
       :key="step.key"
       class="step-item"
-      :class="{ active: step.key === current }"
+      :class="{ active: step.key === currentStep }"
+      @click="navigateTo(step.key)"
     >
       <span class="step-index">{{ idx + 1 }}</span>
       <span class="step-label">{{ step.label }}</span>
