@@ -318,6 +318,8 @@ button:disabled {
   font-size: 12px;
   align-self: flex-start;
 }
+
+.character-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
