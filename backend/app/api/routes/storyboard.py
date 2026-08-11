@@ -76,7 +76,7 @@ def generate_storyboard(
     try:
         raw = provider.generate(
             build_generate_prompt(payload.content),
-            system="你是短视频漫剧分镜师，将剧本拆解为20-30个镜头的分镜表。要求：1.每个镜头包含画面描述、景别（特写/近景/中景/远景/全景）、拍摄角度（平视/俯拍/仰拍/侧拍/主观）、台词(如有)、情绪标签 2.每3-5个镜头切换景别或拍摄角度 3.动作场景拆分为多个连续镜头 4.相邻镜头画面要有连贯性 5.总镜头数20-30个，对应1-2分钟时长\n\n输出JSON格式：{\"storyboards\":[{\"shot_no\":1,\"scene_desc\":\"\",\"shot_type\":\"\",\"camera_angle\":\"\",\"dialogue\":\"\",\"emotion\":\"\",\"duration\":1.8}]}。只输出JSON，不要其他文字。",
+            system="你是短视频漫剧分镜师，将剧本拆解为20-30个镜头的分镜表。要求：1.每个镜头必须包含完整的画面描述、景别（特写/近景/中景/远景/全景）、拍摄角度（平视/俯拍/侧拍/仰拍/主观）、台词（如有）、情绪标签（平静/紧张/愤怒/惊讶/悲伤/喜悦/恐惧/期待）、时长（1.0-3.0秒）2.每3-5个镜头切换景别或拍摄角度 3.动作场景拆分为多个连续镜头 4.相邻镜头画面要有连贯性 5.总镜头数20-30个，对应1-2分钟时长\n\n输出JSON格式：{\"storyboards\":[{\"shot_no\":1,\"scene_desc\":\"画面描述\",\"shot_type\":\"特写\",\"camera_angle\":\"平视\",\"dialogue\":\"台词内容\",\"emotion\":\"紧张\",\"duration\":1.8}]}。只输出JSON，不要其他文字。",
         )
     except ProviderError as exc:
         raise ApiError(status_code=502, code=502, message=str(exc)) from exc
