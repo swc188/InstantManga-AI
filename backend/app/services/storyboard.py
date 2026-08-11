@@ -29,13 +29,12 @@ def build_generate_prompt(content: str) -> str:
     dialogues = []
 
     # 匹配引号内的台词（支持中文和英文引号）
-    for match in re.finditer(r'["\""](.*?)["\""]', content):
+    # 排除句号、冒号、省略号，确保只提取真正台词
+    for match in re.finditer(r'["\""]([^'"\"。：…]+)["\""]', content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2:
-            # 过滤掉叙述性文本
-            if '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
-                if dialogue not in dialogues:
-                    dialogues.append(dialogue)
+            if dialogue not in dialogues:
+                dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
@@ -122,13 +121,12 @@ def validate_dialogue_coverage(
     dialogues = []
 
     # 匹配引号内的台词（支持中文和英文引号）
-    for match in re.finditer(r'["\""](.*?)["\""]', script_content):
+    # 排除句号、冒号、省略号，确保只提取真正台词
+    for match in re.finditer(r'["\""]([^'"\"。：…]+)["\""]', script_content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2:
-            # 过滤掉叙述性文本
-            if '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
-                if dialogue not in dialogues:
-                    dialogues.append(dialogue)
+            if dialogue not in dialogues:
+                dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
