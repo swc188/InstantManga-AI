@@ -28,16 +28,16 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 角色名："台词" 或 角色名：台词
+    # 格式1: 角色名："台词" 或 角色名：台词 - 提取引号内的台词
     for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', content):
         dialogue = match.group(1).strip().strip('"“”')
-        if dialogue and len(dialogue) > 2:
+        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。') and not dialogue.endswith('！') and not dialogue.endswith('？'):
             dialogues.append(dialogue)
 
-    # 格式2: 独立台词 "台词"
+    # 格式2: 独立台词 "台词" - 提取引号内的内容
     for match in re.finditer(r'[""]([^"""]{3,})[""]', content):
         dialogue = match.group(1).strip()
-        if dialogue not in dialogues:
+        if dialogue not in dialogues and len(dialogue) > 2:
             dialogues.append(dialogue)
 
     # 限制台词数量，避免 prompt 过长
