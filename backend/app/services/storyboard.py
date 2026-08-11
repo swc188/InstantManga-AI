@@ -92,15 +92,31 @@ def validate_dialogue_coverage(
     script_content: str, storyboards: list[dict]
 ) -> list[str]:
     """校验剧本台词是否都被分配到分镜。"""
-    dialogues = re.findall(r'"([^"]+)"|【([^】]+)】', script_content)
-    all_dialogues = [d[0] or d[1] for d in dialogues if d[0] or d[1]]
-    
+    # 匹配多种台词格式：
+    # 1. 角色名："台词" 或 角色名：台词
+    # 2. 纯台词 "台词" 或 （台词）
+    # 3. 带引号的台词
+    dialogues = []
+
+    # 格式1: 角色名："台词" 或 角色名：台词
+    for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', script_content):
+        dialogue = match.group(1).strip().strip('"“”')
+        if dialogue and len(dialogue) > 2:
+            dialogues.append(dialogue)
+
+    # 格式2: 独立台词 "台词"
+    for match in re.finditer(r'[""]([^"""]{3,})[""]', script_content):
+        dialogue = match.group(1).strip()
+        # 避免重复添加（已在格式1中添加的）
+        if dialogue not in dialogues:
+            dialogues.append(dialogue)
+
     covered = set()
     for sb in storyboards:
         if sb.get("dialogue"):
             covered.add(sb["dialogue"].strip())
-    
-    uncovered = [d for d in all_dialogues if d not in covered]
+
+    uncovered = [d for d in dialogues if d not in covered]
     return uncovered[:5]  # 最多返回 5 条
 
 
