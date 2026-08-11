@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from .routes import health, model_config, projects, script
+from .routes import health, model_config, projects, script, storyboard
 
 api_router = APIRouter()
 api_router.include_router(health.router)
 api_router.include_router(model_config.router)
 api_router.include_router(projects.router)
 api_router.include_router(script.router)
+api_router.include_router(storyboard.router)
