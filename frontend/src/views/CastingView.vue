@@ -83,7 +83,7 @@ async function generatePortrait(characterId: number) {
       { method: 'POST' },
     )
     const char = characters.value.find((c) => c.id === characterId)
-    if (char) char.portrait_path = result.data.portrait_path
+    if (char && result.data) char.portrait_path = result.data.portrait_path
     notice.value = '定妆照生成成功'
   } catch (e) {
     errorMsg.value = (e as Error).message
