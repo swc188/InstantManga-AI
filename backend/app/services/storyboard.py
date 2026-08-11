@@ -28,20 +28,26 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 角色名："台词" 或 角色名：台词 - 提取引号内的台词
+    # 格式1: 角色名："台词" 或 角色名：台词
     for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', content):
         dialogue = match.group(1).strip().strip('"“”')
-        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。') and not dialogue.endswith('！') and not dialogue.endswith('？'):
+        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
             dialogues.append(dialogue)
 
-    # 格式2: 独立台词 "台词" - 提取引号内的内容
-    for match in re.finditer(r'[""]([^"""]{3,})[""]', content):
+    # 格式2: 独立台词 "台词"
+    for match in re.finditer(r"['\"]([^'\"]{3,})['\"]", content):
         dialogue = match.group(1).strip()
-        if dialogue not in dialogues and len(dialogue) > 2:
+        if dialogue not in dialogues:
             dialogues.append(dialogue)
 
-    # 限制台词数量，避免 prompt 过长
-    dialogues = dialogues[:10]
+    # 格式3: 【】标注的关键台词
+    for match in re.finditer(r'【([^】]+)】', content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 2:
+            dialogues.append(dialogue)
+
+    # 限制台词数量
+    dialogues = dialogues[:15]
 
     prompt = f"请将以下剧本拆解为 20-30 个镜头的分镜表。\n\n剧本内容：\n{content}\n\n需要提取的台词（必须分配到对应镜头）：\n"
     for i, d in enumerate(dialogues, 1):
@@ -115,23 +121,29 @@ def validate_dialogue_coverage(
     script_content: str, storyboards: list[dict]
 ) -> list[str]:
     """校验剧本台词是否都被分配到分镜。"""
-    # 提取剧本中的台词（纯台词部分，不含角色名）
+    # 提取剧本中的台词
     dialogues = []
 
     # 格式1: 角色名："台词" 或 角色名：台词 - 提取引号内的台词
     for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', script_content):
         dialogue = match.group(1).strip().strip('"“”')
-        if dialogue and len(dialogue) > 2:
+        if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
             dialogues.append(dialogue)
 
-    # 格式2: 独立台词 "台词"
-    for match in re.finditer(r'[""]([^"""]{3,})[""]', script_content):
+    # 格式2: 独立台词 "台词" 或 '台词'
+    for match in re.finditer(r"['\"]([^'\"]{3,})['\"]", script_content):
         dialogue = match.group(1).strip()
         if dialogue not in dialogues:
             dialogues.append(dialogue)
 
-    # 限制台词数量，避免 prompt 过长
-    dialogues = dialogues[:10]
+    # 格式3: 【】标注的关键台词
+    for match in re.finditer(r'【([^】]+)】', script_content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 2:
+            dialogues.append(dialogue)
+
+    # 限制台词数量
+    dialogues = dialogues[:15]
 
     # 从分镜中提取台词（去掉角色名前缀）
     covered = set()
@@ -145,7 +157,7 @@ def validate_dialogue_coverage(
             covered.add(dialogue)
 
     uncovered = [d for d in dialogues if d not in covered]
-    return uncovered[:5]  # 最多返回 5 条
+    return uncovered[:5]
 
 
 def check_transition_smoothness(
