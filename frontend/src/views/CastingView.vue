@@ -30,6 +30,7 @@ const scenes = ref<Scene[]>([])
 const generating = ref<number | null>(null)
 const errorMsg = ref('')
 const notice = ref('')
+const uniformStyle = ref<string | null>(null)
 
 // 新增角色表单
 const newCharName = ref('')
@@ -82,7 +83,7 @@ async function addCharacter() {
   }
 }
 
-async function generatePortrait(characterId: number) {
+async function generatePortrait(characterId: number, style?: string) {
   // 不再互斥，每个按钮独立状态
   const char = characters.value.find((c) => c.id === characterId)
   if (!char) return
@@ -92,9 +93,12 @@ async function generatePortrait(characterId: number) {
   try {
     const result = await request<any>(
       '/projects/' + projectId + '/cast/characters/' + characterId + '/generate-portrait',
-      { method: 'POST' },
+      { method: 'POST', body: JSON.stringify({ portrait_style: style || char.portrait_style }) },
     )
-    if (result.data) char.portrait_path = result.data.portrait_path
+    if (result.data) {
+      char.portrait_path = result.data.portrait_path
+      if (result.data.portrait_style) char.portrait_style = result.data.portrait_style
+    }
     notice.value = '定妆照生成成功'
   } catch (e) {
     errorMsg.value = (e as Error).message
@@ -154,6 +158,16 @@ async function deleteScene(sceneId: number) {
 
 onMounted(loadCast)
 
+async function generateAllPortraits(style: string) {
+  notice.value = ''
+  errorMsg.value = ''
+  for (const char of characters.value) {
+    await generatePortrait(char.id, style)
+  }
+  notice.value = `已将 ${characters.value.length} 个角色统一为${getStyleLabel(style)}风格`
+  uniformStyle.value = null
+}
+
 function getPortraitUrl(path: string): string {
   return `/media/${path}`
 }
@@ -180,7 +194,21 @@ function getStyleLabel(style: string | null): string {
 
     <!-- 角色管理 -->
     <div class="card">
-      <h2>角色列表</h2>
+      <div class="card-header">
+        <h2>角色列表</h2>
+        <div v-if="characters.length > 0" class="uniform-style-btns">
+          <span class="style-label">一键统一风格：</span>
+          <button
+            v-for="s in portraitStyles"
+            :key="s.value"
+            class="style-btn"
+            :class="{ active: uniformStyle === s.value }"
+            @click="uniformStyle = s.value; generateAllPortraits(s.value)"
+          >
+            {{ s.label }}
+          </button>
+        </div>
+      </div>
       <div class="add-form">
         <input v-model="newCharName" placeholder="角色名称" class="input" />
         <input v-model="newCharKeywords" placeholder="形象关键词（如：25岁女性，黑色长发，穿着白色婚纱）" class="input" />
@@ -195,7 +223,11 @@ function getStyleLabel(style: string | null): string {
             <span>暂无定妆照</span>
           </div>
           <img v-else :src="getPortraitUrl(char.portrait_path)" :alt="char.name" class="portrait" />
-          <div class="char-style-tag">{{ getStyleLabel(char.portrait_style) }}</div>
+          <div class="char-style-selector">
+            <select v-model="char.portrait_style" class="style-select">
+              <option v-for="s in portraitStyles" :key="s.value" :value="s.value">{{ s.label }}</option>
+            </select>
+          </div>
           <div class="char-info">
             <h3>{{ char.name }}</h3>
             <p class="keywords">{{ char.keywords }}</p>
@@ -319,7 +351,53 @@ button:disabled {
   align-self: flex-start;
 }
 
-.character-grid {
+.char-style-selector {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.style-select {
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.uniform-style-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.style-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.style-btn {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.style-btn:hover {
+  background: #e0e7ff;
+  border-color: #6366f1;
+  color: #4338ca;
+}
+
+.style-btn.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
