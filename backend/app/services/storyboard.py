@@ -139,7 +139,7 @@ def validate_dialogue_coverage(
     dialogues = dialogues[:20]
 
     # 从分镜中提取台词（去掉所有前缀和格式符号）
-    covered = []
+    covered = set()
     for sb in storyboards:
         dialogue = sb.get("dialogue", "") or ""
         # 去掉角色名前缀（如"林晚："、"沈舟（低声）："）
@@ -148,9 +148,10 @@ def validate_dialogue_coverage(
         dialogue = dialogue.strip('「」')
         # 去掉（OS）标记
         dialogue = re.sub(r'\（OS\）', '', dialogue)
-        dialogue = dialogue.strip().strip('"“”\'\'，。！？')
+        # 只去掉首尾引号和空格，保留标点
+        dialogue = dialogue.strip().strip('"“”\'\'')
         if dialogue:
-            covered.append(dialogue)
+            covered.add(dialogue)
 
     uncovered = []
     for d in dialogues:
