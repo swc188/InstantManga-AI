@@ -34,16 +34,16 @@ def build_generate_prompt(content: str) -> str:
         if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
             dialogues.append(dialogue)
 
-    # 格式2: 独立台词 "台词"
-    for match in re.finditer(r"['\"]([^'\"]{3,})['\"]", content):
+    # 格式2: 独立台词 "台词" - 只提取短句（<50字符），过滤叙述性文本
+    for match in re.finditer(r"['\"]([^'\"]{3,50})['\"]", content):
         dialogue = match.group(1).strip()
-        if dialogue not in dialogues:
+        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and dialogue not in dialogues:
             dialogues.append(dialogue)
 
     # 格式3: 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 2:
+        if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
             dialogues.append(dialogue)
 
     # 限制台词数量
@@ -130,22 +130,23 @@ def validate_dialogue_coverage(
         if dialogue and len(dialogue) > 2 and not dialogue.endswith('。'):
             dialogues.append(dialogue)
 
-    # 格式2: 独立台词 "台词" 或 '台词'
-    for match in re.finditer(r"['\"]([^'\"]{3,})['\"]", script_content):
+    # 格式2: 独立台词 "台词" 或 '台词' - 只提取短句（<50字符）
+    for match in re.finditer(r"['\"]([^'\"]{3,50})['\"]", script_content):
         dialogue = match.group(1).strip()
-        if dialogue not in dialogues:
+        # 过滤掉叙述性文本（包含句号、冒号等）
+        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and dialogue not in dialogues:
             dialogues.append(dialogue)
 
     # 格式3: 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 2:
+        if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
             dialogues.append(dialogue)
 
     # 限制台词数量
     dialogues = dialogues[:15]
 
-    # 从分镜中提取台词（去掉角色名前缀）
+    # 从分镜中提取台词（去掉角色名前缀和引号）
     covered = set()
     for sb in storyboards:
         dialogue = sb.get("dialogue", "") or ""
