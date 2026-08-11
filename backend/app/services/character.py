@@ -44,7 +44,6 @@ def generate_character_portrait(
         
         http_client = httpx.Client(
             verify=ssl_ctx,
-            http2=True,
             timeout=60.0,
         )
         
