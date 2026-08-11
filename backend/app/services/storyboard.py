@@ -122,12 +122,23 @@ def validate_dialogue_coverage(
     # 提取剧本中的台词
     dialogues = []
 
-    # 匹配所有引号内的内容
-    for match in re.finditer(r'["\""](.+?)["\""]', script_content):
+    # 方法1: 匹配英文引号内的内容
+    for match in re.finditer(r'"(.+?)"', script_content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 1:
-            if dialogue not in dialogues:
-                dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
+
+    # 方法2: 匹配中文引号内的内容
+    for match in re.finditer(r'「(.+?)」', script_content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
+
+    # 方法3: 匹配引号后跟对话的形式（如：said："dialogue"）
+    for match in re.finditer(r'[：:]\s*["\""](.+?)["\""]', script_content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
@@ -148,6 +159,10 @@ def validate_dialogue_coverage(
         dialogue = dialogue.strip('「」')
         # 去掉（OS）标记
         dialogue = re.sub(r'\（OS\）', '', dialogue)
+        # 去掉（内心）标记
+        dialogue = re.sub(r'（内心）', '', dialogue)
+        # 去掉（低语）标记
+        dialogue = re.sub(r'（低语）', '', dialogue)
         # 只去掉首尾引号和空格，保留标点
         dialogue = dialogue.strip().strip('"“”\'\'')
         if dialogue:
