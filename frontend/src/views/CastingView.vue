@@ -9,6 +9,7 @@ interface Character {
   name: string
   keywords: string
   portrait_path: string | null
+  portrait_style: string | null
   created_at: string
   generating?: boolean
 }
@@ -33,6 +34,12 @@ const notice = ref('')
 // 新增角色表单
 const newCharName = ref('')
 const newCharKeywords = ref('')
+const newCharStyle = ref('manga')
+const portraitStyles = [
+  { value: 'manga', label: '卡通' },
+  { value: 'realistic', label: '写实' },
+  { value: 'chibi', label: 'Q版' },
+]
 
 // 新增场景表单
 const newSceneName = ref('')
@@ -63,6 +70,7 @@ async function addCharacter() {
       body: JSON.stringify({
         name: newCharName.value,
         keywords: newCharKeywords.value,
+        portrait_style: newCharStyle.value,
       }),
     })
     characters.value.push(char)
@@ -149,6 +157,15 @@ onMounted(loadCast)
 function getPortraitUrl(path: string): string {
   return `/media/${path}`
 }
+
+function getStyleLabel(style: string | null): string {
+  const map: Record<string, string> = {
+    manga: '卡通',
+    realistic: '写实',
+    chibi: 'Q版',
+  }
+  return map[style || 'manga'] || '卡通'
+}
 </script>
 
 <template>
@@ -167,6 +184,9 @@ function getPortraitUrl(path: string): string {
       <div class="add-form">
         <input v-model="newCharName" placeholder="角色名称" class="input" />
         <input v-model="newCharKeywords" placeholder="形象关键词（如：25岁女性，黑色长发，穿着白色婚纱）" class="input" />
+        <select v-model="newCharStyle" class="select">
+          <option v-for="s in portraitStyles" :key="s.value" :value="s.value">{{ s.label }}</option>
+        </select>
         <button @click="addCharacter">添加角色</button>
       </div>
       <div class="character-grid">
@@ -175,6 +195,7 @@ function getPortraitUrl(path: string): string {
             <span>暂无定妆照</span>
           </div>
           <img v-else :src="getPortraitUrl(char.portrait_path)" :alt="char.name" class="portrait" />
+          <div class="char-style-tag">{{ getStyleLabel(char.portrait_style) }}</div>
           <div class="char-info">
             <h3>{{ char.name }}</h3>
             <p class="keywords">{{ char.keywords }}</p>
@@ -280,7 +301,23 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.character-grid {
+.select {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.char-style-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 12px;
+  font-size: 12px;
+  align-self: flex-start;
+}
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;

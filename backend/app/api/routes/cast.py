@@ -68,6 +68,7 @@ def generate_portrait(project_id: int, character_id: int, db: Session = Depends(
         project_id=project_id,
         character_name=character.name,
         keywords=character.keywords,
+        style=character.portrait_style or "manga",
     )
     
     character.portrait_path = portrait_path

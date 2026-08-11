@@ -7,12 +7,14 @@ from pydantic import BaseModel
 class CharacterCreate(BaseModel):
     name: str
     keywords: str
+    portrait_style: str | None = None
 
 
 class CharacterUpdate(BaseModel):
     name: Optional[str] = None
     keywords: Optional[str] = None
     portrait_path: Optional[str] = None
+    portrait_style: Optional[str] = None
 
 
 class CharacterOut(CharacterUpdate):

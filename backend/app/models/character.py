@@ -14,6 +14,7 @@ class Character(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     keywords: Mapped[str] = mapped_column(Text, nullable=False)
     portrait_path: Mapped[str | None] = mapped_column(String)
+    portrait_style: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
 

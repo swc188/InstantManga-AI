@@ -20,6 +20,7 @@ def generate_character_portrait(
     project_id: int,
     character_name: str,
     keywords: str,
+    style: str = "manga",
 ) -> str:
     """生成角色定妆照，返回文件路径。"""
     db = next(get_db())
@@ -37,7 +38,14 @@ def generate_character_portrait(
             base_url=cfg.base_url,
         )
 
-        prompt = f"Character portrait of {character_name}. {keywords}. High quality, detailed, manga style, full body shot, neutral background."
+        if style == "realistic":
+            style_desc = "photorealistic, high detail photography, realistic lighting"
+        elif style == "chibi":
+            style_desc = "chibi style, cute cartoon, big head small body, anime style"
+        else:
+            style_desc = "manga style, anime style"
+        
+        prompt = f"Character portrait of {character_name}. {keywords}. {style_desc}, full body shot, neutral background."
 
         response = client.images.generate(
             model=cfg.model_name,
