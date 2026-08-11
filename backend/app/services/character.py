@@ -33,9 +33,25 @@ def generate_character_portrait(
                 message="图像模型未配置或未通过连通性测试",
             )
 
+        import ssl
+        import httpx
+        
+        # 创建自定义 SSL 上下文以兼容低安全级别的服务器
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        ssl_ctx.set_ciphers('DEFAULT@SECLEVEL=0')
+        
+        http_client = httpx.Client(
+            verify=ssl_ctx,
+            http2=True,
+            timeout=60.0,
+        )
+        
         client = OpenAI(
             api_key=decrypt_secret(cfg.api_key_enc),
             base_url=cfg.base_url,
+            http_client=http_client,
         )
 
         style_desc_map = {
