@@ -95,21 +95,21 @@ def generate_storyboard(
             raise ApiError(status_code=502, code=502, message="AI 返回内容无法解析，请重试")
         json_str = match.group(0)
         
-            # 方法3: 修复常见的 JSON 错误
-            try:
-                # 移除尾随逗号
-                json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
-                # 修复未引号的键
-                json_str = _re.sub(r'(\w+)\s*:', r'"\1":', json_str)
-                # 修复缺少逗号的字段（如 `"value" "key"` 应为 `"value", "key"`）
-                json_str = _re.sub(r'"([^"]+)"\s+"', r'"\1", "', json_str)
-                # 修复缺少引号的字符串值
-                json_str = _re.sub(r':\s*([^"{}\[\],\s][^,}\]]*)', r': "\1"', json_str)
-                # 移除控制字符（换行、制表符等）
-                json_str = _re.sub(r'[\x00-\x1f]', '', json_str)
-                data = _json.loads(json_str)
-            except _json.JSONDecodeError:
-                pass
+        # 方法3: 修复常见的 JSON 错误
+        try:
+            # 移除尾随逗号
+            json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
+            # 修复未引号的键
+            json_str = _re.sub(r'(\w+)\s*:', r'"\1":', json_str)
+            # 修复缺少逗号的字段（如 `"value" "key"` 应为 `"value", "key"`）
+            json_str = _re.sub(r'"([^"]+)"\s+"', r'"\1", "', json_str)
+            # 修复缺少引号的字符串值
+            json_str = _re.sub(r':\s*([^"{}\[\],\s][^,}\]]*)', r': "\1"', json_str)
+            # 移除控制字符（换行、制表符等）
+            json_str = _re.sub(r'[\x00-\x1f]', '', json_str)
+            data = _json.loads(json_str)
+        except _json.JSONDecodeError:
+            pass
         
         # 方法4: 逐字符修复
         if 'data' not in locals():

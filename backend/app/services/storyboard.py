@@ -28,15 +28,23 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 匹配所有引号内的内容（包括带标点的完整句子）
-    for match in re.finditer(r'["\""](.*?)["\""]', content):
+    # 方法1: 匹配英文引号内的内容
+    for match in re.finditer(r'"(.+?)"', content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 1:
-            # 移除首尾标点
-            dialogue = dialogue.strip('，。！？、；：')
-            if dialogue and len(dialogue) > 1:
-                if dialogue not in dialogues:
-                    dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
+
+    # 方法2: 匹配中文引号内的内容
+    for match in re.finditer(r'「(.+?)」', content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
+
+    # 方法3: 匹配引号后跟对话的形式（如：said："dialogue"）
+    for match in re.finditer(r'[：:]\s*["\""](.+?)["\""]', content):
+        dialogue = match.group(1).strip()
+        if dialogue and len(dialogue) > 1 and dialogue not in dialogues:
+            dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
