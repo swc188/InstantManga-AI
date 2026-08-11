@@ -115,6 +115,9 @@ def generate_storyboard(
                 fixed = []
                 in_string = False
                 escape = False
+                brace_count = 0
+                bracket_count = 0
+                
                 for i, c in enumerate(json_str):
                     if escape:
                         fixed.append(c)
@@ -131,15 +134,21 @@ def generate_storyboard(
                     if in_string:
                         fixed.append(c)
                         continue
+                    
                     # 不在字符串内
-                    if c in '{[':
+                    if c == '{':
+                        brace_count += 1
                         fixed.append(c)
                     elif c == '}':
-                        # 检查是否需要逗号
+                        brace_count -= 1
                         if fixed and fixed[-1] not in '[,{':
                             fixed.append(',')
                         fixed.append(c)
+                    elif c == '[':
+                        bracket_count += 1
+                        fixed.append(c)
                     elif c == ']':
+                        bracket_count -= 1
                         if fixed and fixed[-1] not in '[,{':
                             fixed.append(',')
                         fixed.append(c)
@@ -154,6 +163,15 @@ def generate_storyboard(
                         fixed.append(f'"{c}"')
                 
                 json_str = ''.join(fixed)
+                
+                # 如果括号不匹配，尝试补全
+                while brace_count > 0:
+                    json_str += '}'
+                    brace_count -= 1
+                while bracket_count > 0:
+                    json_str += ']'
+                    bracket_count -= 1
+                
                 # 再次尝试修复尾随逗号
                 json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
                 data = _json.loads(json_str)
