@@ -65,6 +65,6 @@ def generate_character_portrait(
         with open(filepath, "wb") as f:
             f.write(resp.content)
 
-        return f"characters/{filename}"
+        return f"{project_id}/characters/{filename}"
     finally:
         db.close()

@@ -42,6 +42,11 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.api_prefix)
 
+    # 静态文件服务
+    media_path = settings.media_root
+    if media_path.exists():
+        app.mount("/media", StaticFiles(directory=str(media_path)), name="media")
+
     return app
 
 

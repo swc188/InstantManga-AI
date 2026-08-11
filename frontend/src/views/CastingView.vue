@@ -145,6 +145,10 @@ async function deleteScene(sceneId: number) {
 }
 
 onMounted(loadCast)
+
+function getPortraitUrl(path: string): string {
+  return `/media/${path}`
+}
 </script>
 
 <template>
@@ -170,7 +174,7 @@ onMounted(loadCast)
           <div class="portrait-placeholder" v-if="!char.portrait_path">
             <span>暂无定妆照</span>
           </div>
-          <img v-else :src="'/media/' + char.portrait_path" :alt="char.name" class="portrait" />
+          <img v-else :src="getPortraitUrl(char.portrait_path)" :alt="char.name" class="portrait" />
           <div class="char-info">
             <h3>{{ char.name }}</h3>
             <p class="keywords">{{ char.keywords }}</p>
@@ -178,10 +182,10 @@ onMounted(loadCast)
           <div class="char-actions">
             <button
               class="ghost"
-              :disabled="generating === char.id"
+              :disabled="char.generating"
               @click="generatePortrait(char.id)"
             >
-              {{ generating === char.id ? '生成中…' : '生成定妆照' }}
+              {{ char.generating ? '生成中…' : '生成定妆照' }}
             </button>
             <button class="ghost danger" @click="deleteCharacter(char.id)">删除</button>
           </div>
