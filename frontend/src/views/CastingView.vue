@@ -173,13 +173,34 @@ async function generateAllPortraits(style: string) {
   isGeneratingAll.value = true
   notice.value = `正在统一生成${getStyleLabel(style)}风格定妆照...`
   errorMsg.value = ''
-  let success = 0
-  for (const char of characters.value) {
-    await generatePortrait(char.id, style)
-    success++
-    notice.value = `已处理 ${success}/${characters.value.length} 个角色`
-  }
-  notice.value = `已将 ${characters.value.length} 个角色统一为${getStyleLabel(style)}风格`
+  
+  // 并行生成所有角色
+  const promises = characters.value.map(async (char) => {
+    char.generating = true
+    try {
+      const result = await request<any>(
+        '/projects/' + projectId + '/cast/characters/' + char.id + '/generate-portrait',
+        { method: 'POST', body: JSON.stringify({ portrait_style: style }) },
+      )
+      if (result.data) {
+        char.portrait_path = result.data.portrait_path
+        char.portrait_style = result.data.portrait_style || style
+      }
+      return char.id
+    } catch (e) {
+      errorMsg.value = (e as Error).message
+      return null
+    } finally {
+      char.generating = false
+    }
+  })
+  
+  const results = await Promise.all(promises)
+  const successCount = results.filter(Boolean).length
+  
+  notice.value = successCount > 0 
+    ? `已生成 ${successCount}/${characters.value.length} 个角色的${getStyleLabel(style)}风格定妆照`
+    : '生成失败'
   uniformStyle.value = null
   isGeneratingAll.value = false
 }

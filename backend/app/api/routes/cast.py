@@ -57,18 +57,19 @@ def update_character(project_id: int, character_id: int, payload: CharacterUpdat
 
 
 @router.post("/characters/{character_id}/generate-portrait", response_model=ApiResponse)
-def generate_portrait(project_id: int, character_id: int, db: Session = Depends(get_db)) -> ApiResponse:
+def generate_portrait(project_id: int, character_id: int, payload: dict | None = None, db: Session = Depends(get_db)) -> ApiResponse:
     """生成角色定妆照"""
     _get_project(db, project_id)
     character = db.get(Character, character_id)
     if character is None or character.project_id != project_id:
         raise ApiError(status_code=404, code=404, message="角色不存在")
     
+    style = payload.get('portrait_style') if payload else None
     portrait_path = character_service.generate_character_portrait(
         project_id=project_id,
         character_name=character.name,
         keywords=character.keywords,
-        style=character.portrait_style or "manga",
+        style=style or character.portrait_style or "manga",
     )
     
     character.portrait_path = portrait_path
