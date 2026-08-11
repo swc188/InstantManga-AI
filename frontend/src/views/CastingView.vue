@@ -9,6 +9,7 @@ interface Character {
   name: string
   keywords: string
   portrait_path: string | null
+  portrait_url: string | null
   portrait_style: string | null
   created_at: string
   generating?: boolean
@@ -184,6 +185,7 @@ async function generateAllPortraits(style: string) {
       )
       if (result.data) {
         char.portrait_path = result.data.portrait_path
+        char.portrait_url = result.data.portrait_url
         char.portrait_style = result.data.portrait_style || style
       }
       return char.id
@@ -289,7 +291,7 @@ function getStyleLabel(style: string | null): string {
           <div class="portrait-placeholder" v-if="!char.portrait_path">
             <span>暂无定妆照</span>
           </div>
-          <img v-else :src="getPortraitUrl(char.portrait_path)" :alt="char.name" class="portrait" />
+          <img v-else :src="char.portrait_url || getPortraitUrl(char.portrait_path)" :alt="char.name" class="portrait" />
           <div class="char-style-selector">
             <select v-model="char.portrait_style" class="style-select">
               <option v-for="s in portraitStyles" :key="s.value" :value="s.value">{{ s.label }}</option>

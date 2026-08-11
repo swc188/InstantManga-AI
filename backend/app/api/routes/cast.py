@@ -65,14 +65,15 @@ def generate_portrait(project_id: int, character_id: int, payload: dict | None =
         raise ApiError(status_code=404, code=404, message="角色不存在")
     
     style = payload.get('portrait_style') if payload else None
-    portrait_path = character_service.generate_character_portrait(
+    portrait_result = character_service.generate_character_portrait(
         project_id=project_id,
         character_name=character.name,
         keywords=character.keywords,
         style=style or character.portrait_style or "manga",
     )
     
-    character.portrait_path = portrait_path
+    character.portrait_path = portrait_result["path"]
+    character.portrait_url = portrait_result.get("url")
     db.commit()
     db.refresh(character)
     

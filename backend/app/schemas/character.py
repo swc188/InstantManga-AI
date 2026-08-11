@@ -15,6 +15,7 @@ class CharacterUpdate(BaseModel):
     keywords: Optional[str] = None
     portrait_path: Optional[str] = None
     portrait_style: Optional[str] = None
+    portrait_url: Optional[str] = None
 
 
 class CharacterOut(CharacterUpdate):
