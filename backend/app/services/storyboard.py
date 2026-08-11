@@ -28,15 +28,16 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 引号内的台词 "台词" 或 '台词'
-    for match in re.finditer(r'["\']([^"\']{3,80})["\']', content):
+    # 匹配引号内的台词（支持中文和英文引号）
+    for match in re.finditer(r'["\""](.*?)["\""]', content):
         dialogue = match.group(1).strip()
-        # 过滤掉叙述性文本
-        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
-            if dialogue not in dialogues:
-                dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 2:
+            # 过滤掉叙述性文本
+            if '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
+                if dialogue not in dialogues:
+                    dialogues.append(dialogue)
 
-    # 格式2: 【】标注的关键台词
+    # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
@@ -120,15 +121,16 @@ def validate_dialogue_coverage(
     # 提取剧本中的台词
     dialogues = []
 
-    # 格式1: 引号内的台词 "台词" 或 '台词'
-    for match in re.finditer(r'["\']([^"\']{3,80})["\']', script_content):
+    # 匹配引号内的台词（支持中文和英文引号）
+    for match in re.finditer(r'["\""](.*?)["\""]', script_content):
         dialogue = match.group(1).strip()
-        # 过滤掉叙述性文本（包含句号、冒号的不是台词）
-        if dialogue and len(dialogue) > 2 and '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
-            if dialogue not in dialogues:
-                dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 2:
+            # 过滤掉叙述性文本
+            if '。' not in dialogue and '：' not in dialogue and '…' not in dialogue:
+                if dialogue not in dialogues:
+                    dialogues.append(dialogue)
 
-    # 格式2: 【】标注的关键台词
+    # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 2 and dialogue not in dialogues:
