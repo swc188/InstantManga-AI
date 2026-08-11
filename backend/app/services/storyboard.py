@@ -152,7 +152,17 @@ def validate_dialogue_coverage(
         if dialogue:
             covered.add(dialogue)
 
-    uncovered = [d for d in dialogues if d not in covered]
+    uncovered = []
+    for d in dialogues:
+        # 检查是否完全匹配或部分匹配
+        found = False
+        for c in covered:
+            if d == c or d in c or c in d:
+                found = True
+                break
+        if not found:
+            uncovered.append(d)
+
     return uncovered[:10]
 
 
