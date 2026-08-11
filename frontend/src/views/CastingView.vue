@@ -10,6 +10,7 @@ interface Character {
   keywords: string
   portrait_path: string | null
   created_at: string
+  generating?: boolean
 }
 
 interface Scene {
@@ -74,7 +75,10 @@ async function addCharacter() {
 }
 
 async function generatePortrait(characterId: number) {
-  generating.value = characterId
+  // 不再互斥，每个按钮独立状态
+  const char = characters.value.find((c) => c.id === characterId)
+  if (!char) return
+  char.generating = true
   errorMsg.value = ''
   notice.value = ''
   try {
@@ -82,13 +86,12 @@ async function generatePortrait(characterId: number) {
       '/projects/' + projectId + '/cast/characters/' + characterId + '/generate-portrait',
       { method: 'POST' },
     )
-    const char = characters.value.find((c) => c.id === characterId)
-    if (char && result.data) char.portrait_path = result.data.portrait_path
+    if (result.data) char.portrait_path = result.data.portrait_path
     notice.value = '定妆照生成成功'
   } catch (e) {
     errorMsg.value = (e as Error).message
   } finally {
-    generating.value = null
+    char.generating = false
   }
 }
 
