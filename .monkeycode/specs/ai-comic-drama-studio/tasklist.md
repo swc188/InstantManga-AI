@@ -15,12 +15,13 @@ Updated: 2026-08-11
 
 ## Phase 1: AI Provider 适配层（3-4 天）
 
-- [ ] T1.1 定义 `TextProvider` / `ImageProvider` / `TTSProvider` 抽象接口
-- [ ] T1.2 实现 `openai_compatible` 提供商（LLM chat completions + TTS /audio/speech）
-- [ ] T1.3 实现图像生成适配：openai 兼容 images + 即梦/可灵厂商 HTTP 适配骨架（可插拔）
-- [ ] T1.4 垫图降级机制：不支持参考图的提供商自动降级为纯描述词并标注
-- [ ] T1.5 模型配置的连通性测试：`POST /model-config/test`
-- [ ] T1.6 API Key 加密存储（Fernet + 本机派生密钥）与导出脱敏
+- [x] T1.1 定义 `TextProvider` / `ImageProvider` / `TTSProvider` 抽象接口
+- [x] T1.2 实现 `openai_compatible` 提供商（LLM chat completions + TTS /audio/speech）
+- [x] T1.3 实现图像生成适配：openai 兼容 images + 即梦/可灵厂商 HTTP 适配骨架（可插拔）
+- [x] T1.4 垫图降级机制：不支持参考图的提供商自动降级为纯描述词并标注
+- [x] T1.5 模型配置的连通性测试：`POST /model-config/test`
+- [x] T1.6 API Key 加密存储（Fernet + 本机派生密钥）与导出脱敏
+- [x] T1.7 前端模型配置页（三类能力表单 + 保存 + 连通性测试）
 
 ## Phase 2: 项目与剧本模块（3 天）
 

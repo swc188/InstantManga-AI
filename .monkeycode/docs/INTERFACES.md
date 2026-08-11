@@ -44,6 +44,24 @@
 }
 ```
 
+### 模型配置
+
+`GET /api/model-config`
+
+返回三类能力（text/image/tts）的已保存配置列表，API Key 以掩码展示（如 `sk-a****1234`）。
+
+`PUT /api/model-config/{capability}`
+
+保存/更新某一能力的配置。请求体：`provider_type`（openai_compatible/jimeng/keling）、`base_url`、`api_key`（留空表示保留原 Key）、`model_name`。保存后 `is_valid` 重置为 0。
+
+`POST /api/model-config/test`
+
+对传入的临时配置做连通性测试。请求体含 `capability`、`provider_type`、`base_url`、`api_key`、`model_name`。返回 `{ok: bool}`，失败时 `code=1` 且 message 为可读原因。
+
+`POST /api/model-config/{capability}/test`
+
+对已保存配置做连通性测试，通过后将 `is_valid` 置为 1。
+
 ### OpenAPI
 
 - Swagger UI: `GET /api/docs`
@@ -55,7 +73,6 @@
 
 | 模块 | 端点 | 阶段 |
 |------|------|------|
-| 模型配置 | `GET/PUT /model-config`、`POST /model-config/test` | Phase 1 |
 | 项目 | `POST /projects`、`GET /projects`、`GET/PUT /projects/{id}` | Phase 2 |
 | 剧本 | `POST /projects/{id}/script/generate`、`PUT /projects/{id}/script` | Phase 2 |
 | 分镜 | `POST /projects/{id}/storyboard/generate`、`GET/PUT /projects/{id}/storyboard` | Phase 3 |

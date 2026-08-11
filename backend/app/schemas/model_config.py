@@ -1,0 +1,37 @@
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+
+class ModelConfigOut(BaseModel):
+    capability: str
+    provider_type: str
+    base_url: str
+    api_key_masked: str
+    model_name: str
+    is_valid: bool
+    updated_at: datetime
+
+
+class ModelConfigUpsert(BaseModel):
+    provider_type: str = "openai_compatible"
+    base_url: str
+    api_key: str | None = None
+    model_name: str
+
+
+class ModelConfigTest(BaseModel):
+    capability: str
+    provider_type: str = "openai_compatible"
+    base_url: str
+    api_key: str
+    model_name: str
+
+
+CAPABILITIES = ("text", "image", "tts")
+
+
+def mask_key(key: str) -> str:
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
