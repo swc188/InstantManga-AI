@@ -115,13 +115,10 @@ def validate_dialogue_coverage(
     script_content: str, storyboards: list[dict]
 ) -> list[str]:
     """校验剧本台词是否都被分配到分镜。"""
-    # 匹配多种台词格式：
-    # 1. 角色名："台词" 或 角色名：台词
-    # 2. 纯台词 "台词" 或 （台词）
-    # 3. 带引号的台词
+    # 提取剧本中的台词（纯台词部分，不含角色名）
     dialogues = []
 
-    # 格式1: 角色名："台词" 或 角色名：台词
+    # 格式1: 角色名："台词" 或 角色名：台词 - 提取引号内的台词
     for match in re.finditer(r'[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?["\s]*[：:]\s*[""]?([^"""]+)[""]?', script_content):
         dialogue = match.group(1).strip().strip('"“”')
         if dialogue and len(dialogue) > 2:
@@ -130,14 +127,22 @@ def validate_dialogue_coverage(
     # 格式2: 独立台词 "台词"
     for match in re.finditer(r'[""]([^"""]{3,})[""]', script_content):
         dialogue = match.group(1).strip()
-        # 避免重复添加（已在格式1中添加的）
         if dialogue not in dialogues:
             dialogues.append(dialogue)
 
+    # 限制台词数量，避免 prompt 过长
+    dialogues = dialogues[:10]
+
+    # 从分镜中提取台词（去掉角色名前缀）
     covered = set()
     for sb in storyboards:
-        if sb.get("dialogue"):
-            covered.add(sb["dialogue"].strip())
+        dialogue = sb.get("dialogue", "") or ""
+        # 去掉角色名前缀（如"顾川："、"林夏（内心OS）："）
+        dialogue = re.sub(r'^[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?[：:]\s*', '', dialogue)
+        dialogue = re.sub(r'^[\u4e00-\u9fa5]+[（(].*?[）)]\s*[：:]\s*', '', dialogue)
+        dialogue = dialogue.strip().strip('"“”')
+        if dialogue:
+            covered.add(dialogue)
 
     uncovered = [d for d in dialogues if d not in covered]
     return uncovered[:5]  # 最多返回 5 条
