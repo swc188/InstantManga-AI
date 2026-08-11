@@ -31,6 +31,7 @@ const generating = ref<number | null>(null)
 const errorMsg = ref('')
 const notice = ref('')
 const uniformStyle = ref<string | null>(null)
+const isGeneratingAll = ref(false)
 
 // 新增角色表单
 const newCharName = ref('')
@@ -168,13 +169,37 @@ async function deleteScene(sceneId: number) {
 onMounted(loadCast)
 
 async function generateAllPortraits(style: string) {
-  notice.value = ''
+  if (isGeneratingAll.value) return
+  isGeneratingAll.value = true
+  notice.value = `正在统一生成${getStyleLabel(style)}风格定妆照...`
   errorMsg.value = ''
+  let success = 0
   for (const char of characters.value) {
     await generatePortrait(char.id, style)
+    success++
+    notice.value = `已处理 ${success}/${characters.value.length} 个角色`
   }
   notice.value = `已将 ${characters.value.length} 个角色统一为${getStyleLabel(style)}风格`
   uniformStyle.value = null
+  isGeneratingAll.value = false
+}
+
+function getStyleIcon(style: string): string {
+  const icons: Record<string, string> = {
+    manga: '✦',
+    realistic: '📷',
+    chibi: '⭐',
+    anime: '🌸',
+    comic: '💥',
+    watercolor: '🎨',
+    sketch: '✏️',
+    pixel: '👾',
+    '3d': '🎲',
+    lineart: '📐',
+    pop: '✨',
+    ink: '🖌️',
+  }
+  return icons[style] || '✦'
 }
 
 function getPortraitUrl(path: string): string {
@@ -214,17 +239,20 @@ function getStyleLabel(style: string | null): string {
     <div class="card">
       <div class="card-header">
         <h2>角色列表</h2>
-        <div v-if="characters.length > 0" class="uniform-style-btns">
+        <div v-if="characters.length > 0" class="uniform-style-section">
           <span class="style-label">一键统一风格：</span>
-          <button
-            v-for="s in portraitStyles"
-            :key="s.value"
-            class="style-btn"
-            :class="{ active: uniformStyle === s.value }"
-            @click="uniformStyle = s.value; generateAllPortraits(s.value)"
-          >
-            {{ s.label }}
-          </button>
+          <div class="style-chips">
+            <button
+              v-for="s in portraitStyles"
+              :key="s.value"
+              class="style-chip"
+              :class="{ active: uniformStyle === s.value, loading: isGeneratingAll }"
+              @click="generateAllPortraits(s.value)"
+            >
+              <span v-if="!isGeneratingAll" class="chip-icon">{{ getStyleIcon(s.value) }}</span>
+              <span class="chip-label">{{ s.label }}</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="add-form">
@@ -383,38 +411,58 @@ button:disabled {
   cursor: pointer;
 }
 
-.uniform-style-btns {
+.uniform-style-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .style-label {
   font-size: 13px;
   color: #64748b;
+  white-space: nowrap;
 }
 
-.style-btn {
-  padding: 6px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
+.style-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.style-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   color: #475569;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.style-btn:hover {
-  background: #e0e7ff;
+.style-chip:hover {
   border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
   color: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
 }
 
-.style-btn.active {
-  background: #6366f1;
+.style-chip.active {
   border-color: #6366f1;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.style-chip.loading {
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .character-grid {
