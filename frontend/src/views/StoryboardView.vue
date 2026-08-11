@@ -16,18 +16,29 @@ interface Storyboard {
   created_at: string
 }
 
+interface TransitionIssue {
+  from_shot: number
+  to_shot: number
+  reason: string
+  type: 'shot_type_jump' | 'scene_jump' | 'emotion_jump'
+}
+
 interface Validation {
   uncovered_dialogues: string[]
-  transition_issues: Array<{
-    from_shot: number
-    to_shot: number
-    reason: string
-  }>
+  transition_issues: TransitionIssue[]
 }
 
 interface StoryboardData {
   storyboards: Storyboard[]
   validation: Validation
+}
+
+interface Stats {
+  shot_types: Record<string, number>
+  camera_angles: Record<string, number>
+  emotions: Record<string, number>
+  total_duration: number
+  dialogue_count: number
 }
 
 const route = useRoute()
@@ -40,6 +51,25 @@ const saving = ref(false)
 const errorMsg = ref('')
 const notice = ref('')
 const scriptContent = ref('')
+const stats = ref<Stats>({ shot_types: {}, camera_angles: {}, emotions: {}, total_duration: 0, dialogue_count: 0 })
+
+function computeStats(shots: Storyboard[]) {
+  const shot_types: Record<string, number> = {}
+  const camera_angles: Record<string, number> = {}
+  const emotions: Record<string, number> = {}
+  let total_duration = 0
+  let dialogue_count = 0
+
+  for (const s of shots) {
+    if (s.shot_type) shot_types[s.shot_type] = (shot_types[s.shot_type] || 0) + 1
+    if (s.camera_angle) camera_angles[s.camera_angle] = (camera_angles[s.camera_angle] || 0) + 1
+    if (s.emotion) emotions[s.emotion] = (emotions[s.emotion] || 0) + 1
+    total_duration += s.duration || 0
+    if (s.dialogue) dialogue_count++
+  }
+
+  stats.value = { shot_types, camera_angles, emotions, total_duration, dialogue_count }
+}
 
 async function generate() {
   if (!scriptContent.value.trim()) {
@@ -56,6 +86,7 @@ async function generate() {
     })
     storyboards.value = data.storyboards
     validation.value = data.validation
+    computeStats(data.storyboards)
     notice.value = `已生成 ${data.storyboards.length} 个镜头`
   } catch (e) {
     errorMsg.value = (e as Error).message
@@ -84,6 +115,7 @@ async function loadStoryboards() {
   try {
     const data = await request<Storyboard[]>(`/projects/${projectId}/storyboard`)
     storyboards.value = data
+    computeStats(data)
   } catch {
     storyboards.value = []
   }
@@ -130,6 +162,63 @@ onMounted(loadStoryboards)
     <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
     <p v-if="notice" class="notice">{{ notice }}</p>
 
+    <!-- 统计面板 -->
+    <div v-if="storyboards.length" class="stats-panel">
+      <h3>分镜统计</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">总镜头数</span>
+          <span class="stat-value">{{ storyboards.length }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">有台词</span>
+          <span class="stat-value">{{ stats.dialogue_count }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">总时长</span>
+          <span class="stat-value">{{ stats.total_duration.toFixed(1) }}s</span>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-group">
+          <span class="stat-group-label">景别分布</span>
+          <div class="stat-bars">
+            <div v-for="(count, type) in stats.shot_types" :key="type" class="stat-bar">
+              <span class="bar-label">{{ type }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: (count / storyboards.length * 100) + '%' }"></div>
+                <span class="bar-count">{{ count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-group">
+          <span class="stat-group-label">角度分布</span>
+          <div class="stat-bars">
+            <div v-for="(count, angle) in stats.camera_angles" :key="angle" class="stat-bar">
+              <span class="bar-label">{{ angle }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: (count / storyboards.length * 100) + '%' }"></div>
+                <span class="bar-count">{{ count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-group">
+          <span class="stat-group-label">情绪分布</span>
+          <div class="stat-bars">
+            <div v-for="(count, emotion) in stats.emotions" :key="emotion" class="stat-bar">
+              <span class="bar-label">{{ emotion }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: (count / storyboards.length * 100) + '%' }"></div>
+                <span class="bar-count">{{ count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 校验提示 -->
     <div v-if="validation.uncovered_dialogues.length" class="warning-box">
       <h4>台词覆盖检查</h4>
@@ -142,7 +231,8 @@ onMounted(loadStoryboards)
     <div v-if="validation.transition_issues.length" class="warning-box">
       <h4>过渡检查</h4>
       <ul>
-        <li v-for="(issue, i) in validation.transition_issues" :key="i">
+        <li v-for="(issue, i) in validation.transition_issues" :key="i" :class="'issue-' + issue.type">
+          <span class="issue-tag">{{ issue.type === 'shot_type_jump' ? '景别' : issue.type === 'scene_jump' ? '场景' : '情绪' }}</span>
           镜头 {{ issue.from_shot }} → {{ issue.to_shot }}：{{ issue.reason }}
         </li>
       </ul>
@@ -338,6 +428,130 @@ onMounted(loadStoryboards)
 
 .warning-box li {
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issue-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.issue-shot_type_jump .issue-tag {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.issue-emotion_jump .issue-tag {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.stats-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.stats-panel h3 {
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-group-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-label {
+  font-size: 12px;
+  color: #475569;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.bar-track {
+  flex: 1;
+  height: 20px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px;
+  min-width: 2px;
+}
+
+.bar-count {
+  position: absolute;
+  right: 8px;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .storyboard-table {
