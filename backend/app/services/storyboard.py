@@ -28,13 +28,15 @@ def build_generate_prompt(content: str) -> str:
     # 提取剧本中的台词
     dialogues = []
 
-    # 匹配引号内的台词（支持中文和英文引号）
-    # 排除句号、冒号、省略号，确保只提取真正台词
-    for match in re.finditer(r'["\""]([^'"\"。：…]+)["\""]', content):
+    # 匹配所有引号内的内容（包括带标点的完整句子）
+    for match in re.finditer(r'["\""](.*?)["\""]', content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 2:
-            if dialogue not in dialogues:
-                dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 1:
+            # 移除首尾标点
+            dialogue = dialogue.strip('，。！？、；：')
+            if dialogue and len(dialogue) > 1:
+                if dialogue not in dialogues:
+                    dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', content):
@@ -43,7 +45,7 @@ def build_generate_prompt(content: str) -> str:
             dialogues.append(dialogue)
 
     # 限制台词数量
-    dialogues = dialogues[:15]
+    dialogues = dialogues[:20]
 
     prompt = f"请将以下剧本拆解为 20-30 个镜头的分镜表。\n\n剧本内容：\n{content}\n\n需要提取的台词（必须分配到对应镜头）：\n"
     for i, d in enumerate(dialogues, 1):
@@ -120,15 +122,12 @@ def validate_dialogue_coverage(
     # 提取剧本中的台词
     dialogues = []
 
-    # 匹配所有引号内的内容（包括带标点的完整句子）
-    for match in re.finditer(r'["\""](.*?)["\""]', script_content):
+    # 匹配所有引号内的内容
+    for match in re.finditer(r'["\""](.+?)["\""]', script_content):
         dialogue = match.group(1).strip()
         if dialogue and len(dialogue) > 1:
-            # 移除首尾标点
-            dialogue = dialogue.strip('，。！？、；：')
-            if dialogue and len(dialogue) > 1:
-                if dialogue not in dialogues:
-                    dialogues.append(dialogue)
+            if dialogue not in dialogues:
+                dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
@@ -139,13 +138,16 @@ def validate_dialogue_coverage(
     # 限制台词数量
     dialogues = dialogues[:20]
 
-    # 从分镜中提取台词（去掉角色名前缀和引号）
+    # 从分镜中提取台词（去掉所有前缀和格式符号）
     covered = set()
     for sb in storyboards:
         dialogue = sb.get("dialogue", "") or ""
-        # 去掉角色名前缀（如"顾川："、"林夏（内心OS）："）
-        dialogue = re.sub(r'^[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?[：:]\s*', '', dialogue)
-        dialogue = re.sub(r'^[\u4e00-\u9fa5]+[（(].*?[）)]\s*[：:]\s*', '', dialogue)
+        # 去掉角色名前缀（如"林晚："、"沈舟（低声）："）
+        dialogue = re.sub(r'^[\u4e00-\u9fa5]+(?:（[^）]+）)?[：:]\s*', '', dialogue)
+        # 去掉「」引号
+        dialogue = dialogue.strip('「」')
+        # 去掉（OS）标记
+        dialogue = re.sub(r'\（OS\）', '', dialogue)
         dialogue = dialogue.strip().strip('"“”\'\'，。！？')
         if dialogue:
             covered.add(dialogue)
