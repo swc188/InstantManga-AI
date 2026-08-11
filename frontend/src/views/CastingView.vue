@@ -416,6 +416,8 @@ button:disabled {
   border-color: #6366f1;
   color: #fff;
 }
+
+.character-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
