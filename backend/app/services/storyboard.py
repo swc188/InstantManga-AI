@@ -120,13 +120,15 @@ def validate_dialogue_coverage(
     # 提取剧本中的台词
     dialogues = []
 
-    # 匹配引号内的台词（支持中文和英文引号）
-    # 排除句号、冒号、省略号，确保只提取真正台词
-    for match in re.finditer(r'["\""]([^'"\"。：…]+)["\""]', script_content):
+    # 匹配所有引号内的内容（包括带标点的完整句子）
+    for match in re.finditer(r'["\""](.*?)["\""]', script_content):
         dialogue = match.group(1).strip()
-        if dialogue and len(dialogue) > 2:
-            if dialogue not in dialogues:
-                dialogues.append(dialogue)
+        if dialogue and len(dialogue) > 1:
+            # 移除首尾标点
+            dialogue = dialogue.strip('，。！？、；：')
+            if dialogue and len(dialogue) > 1:
+                if dialogue not in dialogues:
+                    dialogues.append(dialogue)
 
     # 【】标注的关键台词
     for match in re.finditer(r'【([^】]+)】', script_content):
@@ -135,7 +137,7 @@ def validate_dialogue_coverage(
             dialogues.append(dialogue)
 
     # 限制台词数量
-    dialogues = dialogues[:15]
+    dialogues = dialogues[:20]
 
     # 从分镜中提取台词（去掉角色名前缀和引号）
     covered = set()
@@ -144,12 +146,12 @@ def validate_dialogue_coverage(
         # 去掉角色名前缀（如"顾川："、"林夏（内心OS）："）
         dialogue = re.sub(r'^[\u4e00-\u9fa5]+(?:先生|女士|少爷|小姐)?[：:]\s*', '', dialogue)
         dialogue = re.sub(r'^[\u4e00-\u9fa5]+[（(].*?[）)]\s*[：:]\s*', '', dialogue)
-        dialogue = dialogue.strip().strip('"“”\'\'')
+        dialogue = dialogue.strip().strip('"“”\'\'，。！？')
         if dialogue:
             covered.add(dialogue)
 
     uncovered = [d for d in dialogues if d not in covered]
-    return uncovered[:5]
+    return uncovered[:10]
 
 
 def check_transition_smoothness(
